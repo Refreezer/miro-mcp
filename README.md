@@ -117,6 +117,117 @@ npx @modelcontextprotocol/inspector build/index.js
 MIRO_OAUTH_TOKEN=your_token miro-mcp
 ```
 
+## Client Configuration
+
+This MCP server works with any Model Context Protocol compatible client. Here are configuration examples for popular clients:
+
+### Claude Desktop
+
+1. **Locate your configuration file:**
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+   - **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+2. **Add the Miro MCP server configuration:**
+```json
+{
+  "mcpServers": {
+    "miro-mcp": {
+      "command": "npx",
+      "args": ["@aditya.mishra/miro-mcp"],
+      "env": {
+        "MIRO_OAUTH_TOKEN": "your_miro_oauth_token_here"
+      }
+    }
+  }
+}
+```
+
+3. **Restart Claude Desktop** and the Miro tools will be available in your conversations.
+
+### Cursor
+
+1. **Open Cursor Settings** (Cmd/Ctrl + ,)
+2. **Search for "MCP"** in settings
+3. **Add MCP Server:**
+   - **Name**: `miro-mcp`
+   - **Command**: `npx`
+   - **Args**: `["@aditya.mishra/miro-mcp"]`
+   - **Environment Variables**: `MIRO_OAUTH_TOKEN=your_token_here`
+
+### Cline (formerly Claude Coder)
+
+Add to your `.clinerc` or MCP configuration:
+```json
+{
+  "mcpServers": {
+    "miro-mcp": {
+      "command": "npx",
+      "args": ["@aditya.mishra/miro-mcp"],
+      "env": {
+        "MIRO_OAUTH_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
+### Zed Editor
+
+1. **Open Zed Settings** (Cmd/Ctrl + ,)
+2. **Add to your `settings.json`:**
+```json
+{
+  "experimental.mcp": {
+    "servers": {
+      "miro-mcp": {
+        "command": "npx",
+        "args": ["@aditya.mishra/miro-mcp"],
+        "env": {
+          "MIRO_OAUTH_TOKEN": "your_token_here"
+        }
+      }
+    }
+  }
+}
+```
+
+### Continue.dev
+
+Add to your `continue.json` configuration:
+```json
+{
+  "mcpServers": [
+    {
+      "name": "miro-mcp",
+      "command": "npx",
+      "args": ["@aditya.mishra/miro-mcp"],
+      "env": {
+        "MIRO_OAUTH_TOKEN": "your_token_here"
+      }
+    }
+  ]
+}
+```
+
+### Generic MCP Client
+
+For any other MCP-compatible client, use these parameters:
+- **Command**: `npx`
+- **Arguments**: `["@aditya.mishra/miro-mcp"]`
+- **Environment**: `MIRO_OAUTH_TOKEN=your_token_here`
+- **Working Directory**: Any (the server is self-contained)
+
+## Getting Your Miro OAuth Token
+
+1. **Go to [Miro Developer Portal](https://developers.miro.com/)**
+2. **Create a new app** or use an existing one
+3. **Get your OAuth token** from the app settings
+4. **Set required scopes**: `boards:read`, `boards:write`
+5. **Copy the token** and use it in your MCP client configuration
+
+⚠️ **Security Note**: Keep your OAuth token secure and never commit it to version control.
+
 ## Tool Categories
 
 ### Board Management (6 tools)
