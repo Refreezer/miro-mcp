@@ -51,7 +51,7 @@ A powerful Model Context Protocol server providing complete access to the Miro R
 ## Installation
 
 ```bash
-npm install @soul-script/miro-mcp
+npm install @aditya.mishra/miro-mcp
 ```
 
 ## ⚠️ Important API Limitations & Best Practices
@@ -99,7 +99,7 @@ miro-mcp --token "your_token_here"
   "mcpServers": {
     "miro-mcp": {
       "command": "npx",
-      "args": ["@soul-script/miro-mcp"],
+      "args": ["@aditya.mishra/miro-mcp"],
       "env": {
         "MIRO_OAUTH_TOKEN": "your_token_here"
       }
