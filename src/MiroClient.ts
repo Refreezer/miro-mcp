@@ -107,13 +107,15 @@ export class MiroClient {
       url += `?${searchParams.toString()}`;
     }
 
+    const requestBody = options.body ? JSON.stringify(options.body) : undefined;
+
     const response = await fetch(url, {
       method: options.method || 'GET',
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json'
       },
-      ...(options.body ? { body: JSON.stringify(options.body) } : {})
+      ...(requestBody ? { body: requestBody } : {})
     });
     
     if (!response.ok) {
@@ -194,7 +196,42 @@ export class MiroClient {
   }
 
   async updateItem(boardId: string, itemId: string, data: any): Promise<MiroItem> {
-    return this.fetchApi(`/boards/${boardId}/items/${itemId}`, {
+    const item = await this.getItem(boardId, itemId);
+    
+    let endpoint: string;
+    switch (item.type) {
+      case 'sticky_note':
+        endpoint = `/boards/${boardId}/sticky_notes/${itemId}`;
+        break;
+      case 'shape':
+        endpoint = `/boards/${boardId}/shapes/${itemId}`;
+        break;
+      case 'text':
+        endpoint = `/boards/${boardId}/texts/${itemId}`;
+        break;
+      case 'card':
+        endpoint = `/boards/${boardId}/cards/${itemId}`;
+        break;
+      case 'connector':
+        endpoint = `/boards/${boardId}/connectors/${itemId}`;
+        break;
+      case 'frame':
+        endpoint = `/boards/${boardId}/frames/${itemId}`;
+        break;
+      case 'image':
+        endpoint = `/boards/${boardId}/images/${itemId}`;
+        break;
+      case 'document':
+        endpoint = `/boards/${boardId}/documents/${itemId}`;
+        break;
+      case 'embed':
+        endpoint = `/boards/${boardId}/embeds/${itemId}`;
+        break;
+      default:
+        endpoint = `/boards/${boardId}/items/${itemId}`;
+    }
+    
+    return this.fetchApi(endpoint, {
       method: 'PATCH',
       body: data
     }) as Promise<MiroItem>;
