@@ -1,6 +1,6 @@
 {
   "name": "@aditya.mishra/miro-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A comprehensive Model Context Protocol server providing full access to the Miro REST API v2 with advanced features including board management, content creation, tags, groups, bulk operations, search, and team collaboration",
   "type": "module",
   "publishConfig": {

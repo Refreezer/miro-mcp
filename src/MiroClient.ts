@@ -212,6 +212,9 @@ export class MiroClient {
       case 'card':
         endpoint = `/boards/${boardId}/cards/${itemId}`;
         break;
+      case 'app_card':
+        endpoint = `/boards/${boardId}/app_cards/${itemId}`;
+        break;
       case 'connector':
         endpoint = `/boards/${boardId}/connectors/${itemId}`;
         break;
