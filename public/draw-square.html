@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw Square on Miro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0052cc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Draw Square on Miro Board</h1>
+    <div id="output"></div>
+    <button id="draw-square">Draw Square</button>
+
+    <script>
+        const outputEl = document.getElementById('output');
+        const boardId = "uXjVJGbiU4U=";
+
+        function log(message) {
+            const line = document.createElement('div');
+            line.textContent = message;
+            outputEl.appendChild(line);
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+
+        document.getElementById('draw-square').addEventListener('click', async () => {
+            log(`Creating square on board ${boardId}...`);
+            
+            try {
+                const response = await fetch('/api/create-shape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        boardId: boardId,
+                        shape: "rectangle",
+                        content: "Test Square",
+                        x: 0,
+                        y: 0,
+                        width: 200,
+                        height: 200,
+                        fillColor: "#ffffff",
+                        borderColor: "#000000"
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`Success: ${data.message}`);
+                    log(`Item ID: ${data.item.id}`);
+                } else {
+                    log(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>

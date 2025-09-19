@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miro MCP Client Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0052cc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Miro MCP Client Test</h1>
+    <div id="output"></div>
+    <button id="connect">Connect to SSE</button>
+    <button id="list-boards">List Boards</button>
+
+    <script>
+        const outputEl = document.getElementById('output');
+        let eventSource = null;
+        let messageId = 1;
+
+        function log(message) {
+            const line = document.createElement('div');
+            line.textContent = message;
+            outputEl.appendChild(line);
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+
+        document.getElementById('connect').addEventListener('click', () => {
+            if (eventSource) {
+                eventSource.close();
+                log('Disconnected from previous SSE connection');
+            }
+
+            log('Connecting to SSE...');
+            // Get the current host and use it for the SSE connection
+            const host = window.location.hostname;
+            const port = 3002; // This should match the exposed port in your Docker setup
+            eventSource = new EventSource(`http://${host}:${port}/sse`);
+            
+            eventSource.onopen = () => {
+                log('SSE connection established');
+            };
+            
+            eventSource.onmessage = (event) => {
+                log(`Received: ${event.data}`);
+                try {
+                    const data = JSON.parse(event.data);
+                    log(`Parsed: ${JSON.stringify(data, null, 2)}`);
+                } catch (e) {
+                    log(`Error parsing JSON: ${e.message}`);
+                }
+            };
+            
+            eventSource.onerror = (error) => {
+                log(`SSE Error: ${error.type}`);
+                eventSource.close();
+            };
+        });
+
+        document.getElementById('list-boards').addEventListener('click', async () => {
+            if (!eventSource) {
+                log('Please connect to SSE first');
+                return;
+            }
+
+            const requestId = `req-${messageId++}`;
+            log(`Sending list-resources request (${requestId})...`);
+            
+            try {
+                // Get the current host and use it for the messages endpoint
+                const host = window.location.hostname;
+                const port = 3002; // This should match the exposed port in your Docker setup
+                const response = await fetch(`http://${host}:${port}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: requestId,
+                        method: 'list-resources',
+                        params: {}
+                    })
+                });
+                
+                if (response.ok) {
+                    log('Request sent successfully');
+                } else {
+                    log(`Error sending request: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>

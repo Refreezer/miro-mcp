@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
 import yargs from "yargs/yargs";
+import express from "express";
+import cors from "cors";
 import { hideBin } from "yargs/helpers";
 import { MiroClient } from "./MiroClient.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
@@ -26,6 +28,9 @@ const argv = await yargs(hideBin(process.argv))
 
 // Get token with precedence: command line > environment variable
 const oauthToken = (argv.token as string) || process.env.MIRO_OAUTH_TOKEN;
+
+console.log("OAuth Token (masked):", oauthToken ? `${oauthToken.substring(0, 5)}...${oauthToken.substring(oauthToken.length - 5)}` : "undefined");
+console.log("MIRO_OAUTH_TOKEN env var exists:", process.env.MIRO_OAUTH_TOKEN ? "Yes" : "No");
 
 if (!oauthToken) {
   console.error(
@@ -635,6 +640,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
+    console.log("Received tool call:", request.params.name);
+    console.log("Tool arguments:", JSON.stringify(request.params.arguments));
+    
     switch (request.params.name) {
       // Board Operations
       case "list_boards": {
@@ -772,55 +780,82 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Content Creation
       case "create_sticky_note": {
         const { boardId, content, color = "yellow", x = 0, y = 0 } = request.params.arguments as any;
-        const item = await miroClient.createStickyNote(boardId, {
-          content,
-          color,
-          position: { x, y, origin: 'center' }
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Created sticky note with ID: ${item.id}`,
-            },
-          ],
-        };
+        console.log(`Creating sticky note on board ${boardId} with content: ${content}`);
+        
+        try {
+          const stickyNote = await miroClient.createStickyNote(boardId, {
+            content,
+            color,
+            position: { x, y, origin: 'center' }
+          });
+          console.log("Sticky note created successfully:", stickyNote.id);
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Created sticky note with ID: ${stickyNote.id}`,
+              },
+            ],
+          };
+        } catch (error) {
+          console.error("Error creating sticky note:", error);
+          throw error;
+        }
+        // Этот блок return не нужен, так как у нас уже есть return внутри блока try
       }
 
       case "create_text": {
         const { boardId, content, x = 0, y = 0, fontSize = 14, color = "#000000" } = request.params.arguments as any;
-        const item = await miroClient.createText(boardId, {
-          content,
-          position: { x, y, origin: 'center' },
-          style: { fontSize, color }
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Created text item with ID: ${item.id}`,
-            },
-          ],
-        };
+        console.log(`Creating text on board ${boardId} with content: ${content}`);
+        
+        try {
+          const textItem = await miroClient.createText(boardId, {
+            content,
+            position: { x, y, origin: 'center' },
+            style: { fontSize, color }
+          });
+          console.log("Text created successfully:", textItem.id);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Created text item with ID: ${textItem.id}`,
+              },
+            ],
+          };
+        } catch (error) {
+          console.error("Error creating text:", error);
+          throw error;
+        }
       }
 
       case "create_shape": {
         const { boardId, shape, content, x = 0, y = 0, width = 200, height = 200, fillColor = "#ffffff", borderColor = "#000000" } = request.params.arguments as any;
-        const item = await miroClient.createShape(boardId, {
-          shape,
-          content,
-          position: { x, y, origin: 'center' },
-          geometry: { width, height },
-          style: { fillColor, borderColor }
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Created ${shape} shape with ID: ${item.id}`,
-            },
-          ],
-        };
+        console.log(`Creating shape on board ${boardId}, shape: ${shape}, content: ${content}`);
+        console.log("Shape parameters:", { x, y, width, height, fillColor, borderColor });
+        
+        try {
+          const item = await miroClient.createShape(boardId, {
+            shape,
+            content,
+            position: { x, y, origin: 'center' },
+            geometry: { width, height },
+            style: { fillColor, borderColor }
+          });
+          console.log("Shape created successfully:", item.id);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Created ${shape} shape with ID: ${item.id}`,
+              },
+            ],
+          };
+        } catch (error) {
+          console.error("Error creating shape:", error);
+          throw error;
+        }
       }
 
       case "create_card": {
@@ -1144,6 +1179,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${request.params.name}`);
     }
   } catch (error) {
+    console.error("Error handling tool call:", error);
     return {
       content: [
         {
@@ -1294,8 +1330,75 @@ For detailed API documentation: https://miroapp.github.io/api-clients/node/index
 });
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  const app = express();
+  
+  app.use(express.json());
+  
+  // Middleware для логирования запросов
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+  
+  // Serve static files from the public directory
+  app.use(express.static('public'));
+      
+  // Use the existing server with all the Miro functionality
+  // instead of creating a new empty server
+  
+  // Создаем прямой обработчик для запросов к API Miro
+  app.post("/api/create-shape", async (req, res) => {
+    try {
+      const { boardId, shape, content, x, y, width, height, fillColor, borderColor } = req.body;
+      
+      console.log(`Creating shape on board ${boardId}`);
+      
+      // Используем MiroClient напрямую
+      const item = await miroClient.createShape(boardId, {
+        shape,
+        content,
+        position: { x, y, origin: 'center' },
+        geometry: { width, height },
+        style: { fillColor, borderColor }
+      });
+      
+      res.json({
+        success: true,
+        message: `Created ${shape} shape with ID: ${item.id}`,
+        item
+      });
+    } catch (error) {
+      console.error('Error creating shape:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
+  app.get("/sse", async (req, res) => {
+    let transport = new SSEServerTransport("/messages", res);
+    server.connect(transport);
+  });
+  
+  app.post("/messages", async (req, res) => {
+    try {
+      const body = req.body;
+      console.log('Received message:', JSON.stringify(body));
+      
+
+    } catch (error) {
+      console.error('Error handling message:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  const PORT = 3002;
+  const HOST = '0.0.0.0'; // Listen on all interfaces
+  console.log(`Starting Miro MCP server on ${HOST}:${PORT}`);
+  console.log(`Use the following URL to connect: http://localhost:${PORT}/sse`);
+  
+  app.listen(PORT, HOST);
 }
 
 main().catch((error) => {

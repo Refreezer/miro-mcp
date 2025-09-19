@@ -468,6 +468,43 @@ npm run inspector
 npm run watch
 ```
 
+## Running with Docker
+
+To run the Miro MCP server in a Docker container, follow these steps:
+
+1. Build the Docker image:
+```bash
+docker build -t miro-mcp .
+```
+
+2. Run the Docker container with your Miro OAuth token:
+```bash
+docker run -p 3002:3002 -e MIRO_OAUTH_TOKEN=your_miro_oauth_token miro-mcp
+```
+
+3. Access the MCP server in your browser:
+```
+http://localhost:3002
+```
+
+### Troubleshooting Docker Deployment
+
+If you encounter the error "Could not connect to your MCP server" when trying to access http://localhost:3002/sse:
+
+1. Make sure the Docker container is running:
+```bash
+docker ps
+```
+
+2. Verify that port 3002 is correctly mapped from the container to your host:
+```bash
+docker port <container_id>
+```
+
+3. Ensure you've provided a valid Miro OAuth token when running the container
+
+4. If you're accessing the server from a different machine than where Docker is running, make sure to use that machine's hostname or IP address instead of localhost
+
 ## Limitations
 
 - Maximum 20 items per bulk operation (enforced and validated)
